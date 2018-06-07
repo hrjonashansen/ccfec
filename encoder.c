@@ -32,7 +32,7 @@ int encode(encoder_t* const encoder, uint8_t* RESTRICT const payload)
             memcpy(&size_temp, encoder->data[i], sizeof(int));
             if (size_temp > real_size)
                 real_size = size_temp;
-            assert(size_temp <= symbol_size - sizeof(int));
+            assert(size_temp > 0 && size_temp <= symbol_size - sizeof(int));
             encode_symbol(encoder->data[i], payload + k * sizeof(ff_unit), size_temp + sizeof(int), c);
         }
     }

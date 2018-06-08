@@ -52,9 +52,14 @@ decode_info_t decode(decoder_t* decoder, uint8_t* RESTRICT const payload)
             continue;
         }
         else if (decoder->status[i] != STATUS_UNKNOWN)
+//        else if (decoder->status[i] == STATUS_KNOWN)
         {
             encode_symbol(decoder->coef[i], payload, ps, c);
         }
+//        else if (decoder->status[i] == STATUS_DECODED)
+//        {
+//            encode_symbol(decoder->coef[i], payload, *(int*)(decoder->data[i]) + k * sizeof(ff_unit) + sizeof(int), c);
+//        }
         else if (info.innovative == false)
         {
             info.innovative = true;

@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(decoder_init_free)
     free_decoder(&d);
 }
 
-void test_reed_solomon(const int k, const int symbol_size, const bool systematic)
+void test_reed_solomon(const int k, const int symbol_size, const bool systematic, const bool lossy)
 {
     const int n = 2 * k;
     const int N = 2;
@@ -139,7 +139,13 @@ void test_reed_solomon(const int k, const int symbol_size, const bool systematic
         for (int i = 0; i < n; ++i)
         {
             encode(&e, payload.data());
-            decode_backward(&d, payload.data());
+
+            if (lossy and (i & 1))
+            {
+                continue; 
+            }
+
+            decode(&d, payload.data());
         }
 
         for (int i = 0; i < k; ++i)
@@ -164,9 +170,14 @@ BOOST_AUTO_TEST_CASE(encoder_decoder_full)
     {
         for (int symbol_size = 1; symbol_size < 1600; symbol_size += k)
         {
-            test_reed_solomon(k, symbol_size, false);
-            test_reed_solomon(k, symbol_size, true);
+            test_reed_solomon(k, symbol_size, false, false);
+            test_reed_solomon(k, symbol_size, true, false);
         }
+    }
+
+    for (int k = 1; k < 16; k += 2)
+    {
+        test_reed_solomon(k, 101, true, true);
     }
 
     free_ff();

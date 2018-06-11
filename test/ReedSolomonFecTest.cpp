@@ -142,7 +142,7 @@ void test_reed_solomon(const int k, const int symbol_size, const bool systematic
 
             if (lossy and (i & 1))
             {
-                continue; 
+                continue;
             }
 
             decode(&d, payload.data());
@@ -181,6 +181,19 @@ BOOST_AUTO_TEST_CASE(encoder_decoder_full)
     }
 
     free_ff();
+}
+
+BOOST_AUTO_TEST_CASE(simd_check)
+{
+    int simd = SIMD_size();
+    if (simd)
+    {
+        std::cout << "ccfec SIMD enabled! SIMD size is: " << simd << '\n';
+    }
+    else
+    {
+        std::cout << "ccfec SIMD disabled!\n";
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END() // reedsolomonfec

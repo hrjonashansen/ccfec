@@ -7,14 +7,13 @@
 #include <ccfec/ff_online.h>
 #include <ccfec/encoder.h>
 
-int encode(encoder_t* const encoder, uint8_t* RESTRICT const payload)
+int encode(encoder_t* const encoder, uint8_t* restrict const payload)
 {
     const int k = encoder->k;
     const int symbol_size = encoder->symbol_size;
-//    const int payload_size = k + symbol_size;
     int real_size = 0;
 
-    ff_unit* RESTRICT const coef = encoder->coef[encoder->next];
+    ff_unit* restrict const coef = encoder->coef[encoder->next];
 
     memset(payload + k * sizeof(ff_unit), 0, ff_row_size(symbol_size));
     memcpy(payload, coef, k * sizeof(ff_unit));
@@ -31,9 +30,11 @@ int encode(encoder_t* const encoder, uint8_t* RESTRICT const payload)
             int size_temp;
             memcpy(&size_temp, encoder->data[i], sizeof(int));
             if (size_temp > real_size)
+            {
                 real_size = size_temp;
-            assert(size_temp > 0 && size_temp <= symbol_size - sizeof(int));
-            encode_symbol(encoder->data[i], payload + k * sizeof(ff_unit), size_temp + sizeof(int), c);
+            }
+            assert(size_temp > 0 && (size_t)size_temp <= symbol_size - sizeof(int));
+            encode_symbol(payload + k * sizeof(ff_unit), encoder->data[i], size_temp + sizeof(int), c);
         }
     }
 
@@ -58,12 +59,12 @@ void init_encoder(encoder_t* const encoder, const int k, const int symbol_size, 
     const int coef_pointer_size = n * sizeof(uint8_t*);
     const int total_size = SIMD_size() + 8 + data_block_size + coef_block_size + status_block_size + data_pointer_size + coef_pointer_size;
 
-    encoder->p = (uint8_t* RESTRICT)malloc(total_size);
-    uint8_t* RESTRICT const p_alligned_data = (uint8_t* RESTRICT)ceil_to_grid_p((intptr_t)encoder->p);
+    encoder->p = (uint8_t* restrict)malloc(total_size);
+    uint8_t* restrict const p_alligned_data = (uint8_t* restrict)ceil_to_grid_p(encoder->p);
     encoder->status = p_alligned_data + data_block_size + coef_block_size;
-    uint8_t* RESTRICT const p_alligned_pointers = (uint8_t* RESTRICT)ceil_to_p((intptr_t)(encoder->status + status_block_size));
-    encoder->data = (uint8_t* RESTRICT *)(p_alligned_pointers);
-    encoder->coef = (uint8_t* RESTRICT * RESTRICT)(p_alligned_pointers + data_pointer_size);
+    uint8_t* restrict const p_alligned_pointers = ceil_to_p(encoder->status + status_block_size);
+    encoder->data = (uint8_t* restrict *)(p_alligned_pointers);
+    encoder->coef = (uint8_t* restrict * restrict)(p_alligned_pointers + data_pointer_size);
     if (!encoder->p)
     {
         abort();
@@ -103,7 +104,7 @@ void init_systematic_rs_coef(encoder_t* const encoder)
     for (int i = 0; i < encoder->n; ++i)
     {
         matrix_to_free[i] = (ff_unit*)malloc(ff_row_size(2 * encoder->k * sizeof(ff_unit)) + SIMD_size());
-        matrix[i] = (ff_unit*)ceil_to_grid_p((intptr_t)matrix_to_free[i]);
+        matrix[i] = (ff_unit*)ceil_to_grid_p(matrix_to_free[i]);
     }
 
     // Copy the top k x k matrix from the encoder (and add the identity matrix)
@@ -133,7 +134,7 @@ void init_systematic_rs_coef(encoder_t* const encoder)
         {
             if (matrix[u][r])
             {
-                encode_symbol(matrix[r], matrix[u], 2 * encoder->k, matrix[u][r]);
+                encode_symbol(matrix[u], matrix[r], 2 * encoder->k, matrix[u][r]);
             }
         }
     }
@@ -146,7 +147,7 @@ void init_systematic_rs_coef(encoder_t* const encoder)
         {
             if (matrix[u][r])
             {
-                encode_symbol(matrix[r], matrix[u], 2 * encoder->k, matrix[u][r]);
+                encode_symbol(matrix[u], matrix[r], 2 * encoder->k, matrix[u][r]);
             }
         }
     }
@@ -198,7 +199,7 @@ void reset_encoder(encoder_t* const encoder)
     encoder->next = 0;
 }
 
-int set_symbol(encoder_t* const encoder, uint8_t* RESTRICT const payload, const int id)
+int set_symbol(encoder_t* const encoder, uint8_t* restrict const payload, const int id)
 {
     assert(encoder->status[id] == 0);
     const int size = encoder->symbol_size - sizeof(int);
@@ -208,13 +209,13 @@ int set_symbol(encoder_t* const encoder, uint8_t* RESTRICT const payload, const 
     return encoder->symbol_size;
 }
 
-int set_next_symbol_with_size(encoder_t* const encoder, uint8_t* RESTRICT const payload, const int size)
+int set_next_symbol_with_size(encoder_t* const encoder, uint8_t* restrict const payload, const int size)
 {
     for (int i = 0; i < encoder->k; ++i)
     {
         if (encoder->status[i] == 0)
         {
-            assert(size > 0 && size <= encoder->symbol_size - sizeof(int));
+            assert(size > 0 && (size_t)size <= encoder->symbol_size - sizeof(int));
             memcpy(encoder->data[i] + sizeof(int), payload, size);
             if (encoder->symbol_size != size)
             {

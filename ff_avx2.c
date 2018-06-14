@@ -5,10 +5,10 @@
 #include <ccfec/ff_online.h>
 #include <ccfec/ff.h>
 
-static const uint8_t* RESTRICT gf2_8_inversion_table = NULL;
-static const uint8_t* RESTRICT gf2_8_inversion_table_raw = NULL;
-static const uint8_t* RESTRICT gf2_8_multiplication_table = NULL;
-static const uint8_t* RESTRICT gf2_8_multiplication_table_raw = NULL;
+static const uint8_t* restrict gf2_8_inversion_table = NULL;
+static const uint8_t* restrict gf2_8_inversion_table_raw = NULL;
+static const uint8_t* restrict gf2_8_multiplication_table = NULL;
+static const uint8_t* restrict gf2_8_multiplication_table_raw = NULL;
 
 int SIMD_size()
 {
@@ -23,12 +23,14 @@ int ceil_to_grid(const int arg)
     return res;
 }
 
-intptr_t ceil_to_grid_p(const intptr_t arg)
+uint8_t* ceil_to_grid_p(uint8_t* const arg_p)
 {
+    const intptr_t arg = (intptr_t)arg_p;
     const int grid = SIMD_size();
     const intptr_t modulo = arg & (grid - 1);
     const intptr_t res = (modulo == 0 ? arg : arg + grid - modulo);
-    return res;
+    uint8_t* res_p = (uint8_t*)res;
+    return res_p;
 }
 
 ff_unit* get_coef_p(uint8_t* arg)
@@ -54,8 +56,9 @@ int payload_size(const int k, const int symbol_size)
 const uint8_t* gf2_8_calculate_inversion_table()
 {
     const int max = 256;
-    gf2_8_inversion_table_raw = (uint8_t*)malloc(max + SIMD_size());
-    uint8_t* const table = (uint8_t*)ceil_to_grid_p((intptr_t)gf2_8_inversion_table_raw);
+    uint8_t* const p = (uint8_t*)malloc(max + SIMD_size());
+    uint8_t* const table = ceil_to_grid_p(p);
+    gf2_8_inversion_table_raw = p;
 
     table[1] = 1;
     for (int i = 2; i < max; ++i)
@@ -69,8 +72,9 @@ const uint8_t* gf2_8_calculate_inversion_table()
 
 const uint8_t* gf2_8_calculate_multiplication_table()
 {
-    gf2_8_multiplication_table_raw = (uint8_t*)malloc(256 * 16 * 2 * 2 + SIMD_size());
-    uint8_t* const multiplication_table = (uint8_t*)ceil_to_grid_p((intptr_t)gf2_8_multiplication_table_raw);
+    uint8_t* const p = (uint8_t*)malloc(256 * 16 * 2 * 2 + SIMD_size());
+    uint8_t* const multiplication_table = ceil_to_grid_p(p);
+    gf2_8_multiplication_table_raw = p;
 
     for (int i = 0; i < 256; ++i)
     {
@@ -89,7 +93,7 @@ const uint8_t* gf2_8_calculate_multiplication_table()
     return multiplication_table;
 }
 
-void encode_unit_symbol(const uint8_t* RESTRICT const src, uint8_t* RESTRICT const dst, const int length)
+void encode_unit_symbol(uint8_t* restrict const dst, const uint8_t* restrict const src, const int length)
 {
     // Create the speed up pointers
     const __m256i* src_p = (const __m256i*)src;
@@ -106,7 +110,7 @@ void encode_unit_symbol(const uint8_t* RESTRICT const src, uint8_t* RESTRICT con
     }
 }
 
-void encode_rich_symbol(const uint8_t* RESTRICT const src, uint8_t* RESTRICT const dst, const int length, const ff_unit coef)
+void encode_rich_symbol(uint8_t* restrict const dst, const uint8_t* restrict const src, const int length, const ff_unit coef)
 {
     const __m256i tableLow  = _mm256_load_si256((const __m256i*)(gf2_8_multiplication_table + coef * 16 * 2));
     const __m256i tableHigh = _mm256_load_si256((const __m256i*)(gf2_8_multiplication_table + coef * 16 * 2 + 8192));
@@ -131,19 +135,19 @@ void encode_rich_symbol(const uint8_t* RESTRICT const src, uint8_t* RESTRICT con
     }
 }
 
-void encode_symbol(const uint8_t* RESTRICT const src, uint8_t* RESTRICT const dst, const int length, const ff_unit coef)
+void encode_symbol(uint8_t* restrict const dst, const uint8_t* restrict const src, const int length, const ff_unit coef)
 {
     if (coef == 1)
     {
-        encode_unit_symbol(src, dst, ff_math_size(length));
+        encode_unit_symbol(dst, src, ff_math_size(length));
     }
     else
     {
-        encode_rich_symbol(src, dst, ff_math_size(length), coef);
+        encode_rich_symbol(dst, src, ff_math_size(length), coef);
     }
 }
 
-void normalise_symbol(uint8_t* RESTRICT const dst, const int length_in, const ff_unit coef)
+void normalise_symbol(uint8_t* restrict const dst, const int length_in, const ff_unit coef)
 {
     const int length = ff_math_size(length_in);
     const uint8_t inv_coef = gf2_8_inversion_table[coef];

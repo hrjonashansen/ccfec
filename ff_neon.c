@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <assert.h>
-#include <x86intrin.h> // ssse3
+#include <arm_neon.h>
 
 #include <ccfec/ff_online.h>
 #include <ccfec/ff.h>
@@ -93,44 +93,22 @@ const uint8_t* gf2_8_calculate_multiplication_table()
 
 void encode_unit_symbol(uint8_t* restrict const dst, const uint8_t* restrict const src, const int length)
 {
-    // Create the speed up pointers
-    const __m128i* src_p = (const __m128i*)src;
-    __m128i* dst_p = (__m128i*)dst;
-    for (int i = 0; i < length; ++i, ++dst_p, ++src_p)
+    uint8_t* restrict dst_m = dst; // Mutable version of dst
+    const uint8_t* restrict src_m = src; // Mutable version of src
+    for (int i = 0; i < length; ++i, dst += SIMD_size(), src_m += SIMD_size())
     {
-        // Load coefficients from dst (unaligned) and src (aligned)
-        const __m128i c_src = _mm_load_si128(src_p);
-        __m128i c_dst = _mm_loadu_si128(dst_p);
-        // Do XOR
-        c_dst = _mm_xor_si128(c_dst, c_src);
-        // Store result (unaligned)
-        _mm_storeu_si128(dst_p, c_dst);
+        // Load coefficients from dst_m (must be unaligned) and src_m (should be aligned)
+        const uint8x16_t c_src = vld1q_u8(src_m);
+        uint8x16_t c_dst = vld1q_u8(dst);
+        c_dst = veorq_u8(c_dst, c_src);
+        vst1q_u8(dst, c_dst);
     }
 }
 
 void encode_rich_symbol(uint8_t* restrict const dst, const uint8_t* restrict const src, const int length, const ff_unit coef)
 {
-    const __m128i tableLow  = _mm_load_si128((const __m128i*)(gf2_8_multiplication_table + coef * 16));
-    const __m128i tableHigh = _mm_load_si128((const __m128i*)(gf2_8_multiplication_table + coef * 16 + 4096));
-    const __m128i mask = _mm_set1_epi8(0x0f);
-    const __m128i* src_p = (const __m128i*)src;
-    __m128i* dst_p = (__m128i*)dst;
-    for (int i = 0; i < length; ++i, ++dst_p, ++src_p)
-    {
-        __m128i c_src = _mm_load_si128(src_p);
-        __m128i low = _mm_and_si128(c_src, mask);
-        low = _mm_shuffle_epi8(tableLow, low);
-
-        __m128i high = _mm_srli_epi64(c_src, 4);
-        high = _mm_and_si128(high, mask);
-        high = _mm_shuffle_epi8(tableHigh, high);
-        c_src = _mm_xor_si128(low, high);
-
-        __m128i c_dst = _mm_loadu_si128(dst_p);
-        c_dst = _mm_xor_si128(c_dst, c_src);
-
-        _mm_storeu_si128(dst_p, c_dst);
-    }
+    // TODO: Implement
+    abort();
 }
 
 void encode_symbol(uint8_t* restrict const dst, const uint8_t* restrict const src, const int length, const ff_unit coef)
@@ -147,24 +125,8 @@ void encode_symbol(uint8_t* restrict const dst, const uint8_t* restrict const sr
 
 void normalise_symbol(uint8_t* restrict const dst, const int length_in, const ff_unit coef)
 {
-    const int length = ff_math_size(length_in);
-    const uint8_t inv_coef = gf2_8_inversion_table[coef];
-    const __m128i tableLow  = _mm_load_si128((const __m128i*)(gf2_8_multiplication_table + inv_coef * 16));
-    const __m128i tableHigh = _mm_load_si128((const __m128i*)(gf2_8_multiplication_table + inv_coef * 16 + 4096));
-    const __m128i mask = _mm_set1_epi8(0x0f);
-    __m128i* dst_p = (__m128i*)dst;
-    for (int i = 0; i < length; ++i, ++dst_p)
-    {
-        __m128i full = _mm_load_si128(dst_p);
-        __m128i low = _mm_and_si128(full, mask);
-        low = _mm_shuffle_epi8(tableLow, low);
-
-        __m128i high = _mm_srli_epi64(full, 4);
-        high = _mm_and_si128(high, mask);
-        high = _mm_shuffle_epi8(tableHigh, high);
-        full = _mm_xor_si128(low, high);
-        _mm_store_si128(dst_p, full);
-    }
+    // TODO: Implement
+    abort();
 }
 
 void init_ff()

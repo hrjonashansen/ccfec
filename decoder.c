@@ -36,7 +36,7 @@ void refresh_symbol_status_backward(decoder_t* const decoder, const int index)
 }
 
 // TODO: Break up into smaller functions...
-decode_info_t decode(decoder_t* decoder, uint8_t* RESTRICT const payload)
+decode_info_t decode(decoder_t* decoder, uint8_t* restrict const payload)
 {
     decode_info_t info = {0, false};
 
@@ -54,11 +54,12 @@ decode_info_t decode(decoder_t* decoder, uint8_t* RESTRICT const payload)
         else if (decoder->status[i] != STATUS_UNKNOWN)
 //        else if (decoder->status[i] == STATUS_KNOWN)
         {
-            encode_symbol(decoder->coef[i], payload, ps, c);
+            encode_symbol(payload, decoder->coef[i], ps, c);
         }
 //        else if (decoder->status[i] == STATUS_DECODED)
 //        {
-//            encode_symbol(decoder->coef[i], payload, *(int*)(decoder->data[i]) + k * sizeof(ff_unit) + sizeof(int), c);
+            // TODO: Write test to verify this optimisation
+//            encode_symbol(payload, decoder->coef[i], *(int*)(decoder->data[i]) + k * sizeof(ff_unit) + sizeof(int), c);
 //        }
         else if (info.innovative == false)
         {
@@ -94,7 +95,7 @@ decode_info_t decode(decoder_t* decoder, uint8_t* RESTRICT const payload)
             {
                 continue;
             }
-            encode_symbol(decoder->coef[info.index], decoder->coef[i], ps, c);
+            encode_symbol(decoder->coef[i], decoder->coef[info.index], ps, c);
             refresh_symbol_status_forward(decoder, i);
         }
     }
@@ -103,7 +104,7 @@ decode_info_t decode(decoder_t* decoder, uint8_t* RESTRICT const payload)
 }
 
 // TODO: Break up into smaller functions...
-decode_info_t decode_backward(decoder_t* decoder, uint8_t* RESTRICT const payload)
+decode_info_t decode_backward(decoder_t* decoder, uint8_t* restrict const payload)
 {
     decode_info_t info = {0, false};
 
@@ -120,7 +121,7 @@ decode_info_t decode_backward(decoder_t* decoder, uint8_t* RESTRICT const payloa
         }
         else if (decoder->status[i] != STATUS_UNKNOWN)
         {
-            encode_symbol(decoder->coef[i], payload, ps, c);
+            encode_symbol(payload, decoder->coef[i], ps, c);
         }
         else if (info.innovative == false)
         {
@@ -156,7 +157,7 @@ decode_info_t decode_backward(decoder_t* decoder, uint8_t* RESTRICT const payloa
             {
                 continue;
             }
-            encode_symbol(decoder->coef[info.index], decoder->coef[i], ps, c);
+            encode_symbol(decoder->coef[i], decoder->coef[info.index], ps, c);
             refresh_symbol_status_backward(decoder, i);
         }
     }
@@ -177,16 +178,16 @@ void init_decoder(decoder_t* const decoder, const int k, const int symbol_size)
     const int coef_pointer_size = k * sizeof(uint8_t*);
     const int total_size = SIMD_size() + 8 + coef_and_data_block_size + status_block_size + data_pointer_size + coef_pointer_size;
 
-    decoder->p = (uint8_t* RESTRICT)malloc(total_size);
+    decoder->p = (uint8_t* restrict)malloc(total_size);
     if (!decoder->p)
     {
         abort();
     }
-    uint8_t* RESTRICT const p_alligned_data = (uint8_t* RESTRICT)ceil_to_grid_p((intptr_t)decoder->p);
+    uint8_t* restrict const p_alligned_data = (uint8_t* restrict)ceil_to_grid_p(decoder->p);
     decoder->status = p_alligned_data + coef_and_data_block_size;
-    uint8_t* RESTRICT const p_alligned_pointers = (uint8_t* RESTRICT)ceil_to_p((intptr_t)(decoder->status + status_block_size));
-    decoder->data = (uint8_t* RESTRICT *)(p_alligned_pointers);
-    decoder->coef = (uint8_t* RESTRICT * RESTRICT)(p_alligned_pointers + data_pointer_size);
+    uint8_t* restrict const p_alligned_pointers = ceil_to_p(decoder->status + status_block_size);
+    decoder->data = (uint8_t* restrict *)(p_alligned_pointers);
+    decoder->coef = (uint8_t* restrict * restrict)(p_alligned_pointers + data_pointer_size);
     for (int i = 0; i < k; ++i)
     {
         decoder->coef[i] = p_alligned_data + i * coef_and_data_row_size;
@@ -267,7 +268,7 @@ void print_matrix(const decoder_t* const decoder)
     }
 }
 
-void print_vector(const decoder_t* const decoder, uint8_t* RESTRICT const payload)
+void print_vector(const decoder_t* const decoder, uint8_t* restrict const payload)
 {
     const int k = decoder->k;
 

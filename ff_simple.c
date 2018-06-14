@@ -4,17 +4,17 @@
 #include <ccfec/ff_online.h>
 #include <ccfec/ff.h>
 
-static const uint8_t* RESTRICT gf2_8_inversion_table = NULL;
-static const uint8_t* RESTRICT gf2_8_multiplication_table = NULL;
+static const uint8_t* restrict gf2_8_inversion_table = NULL;
+static const uint8_t* restrict gf2_8_multiplication_table = NULL;
 
 int SIMD_size()
 {
     return 0;
 }
 
-intptr_t ceil_to_grid_p(const intptr_t arg)
+uint8_t* ceil_to_grid_p(uint8_t* const arg_p)
 {
-    return arg;
+    return arg_p;
 }
 
 ff_unit* get_coef_p(uint8_t* arg)
@@ -70,43 +70,43 @@ const uint8_t* gf2_8_calculate_multiplication_table()
     return multiplication_table;
 }
 
-void encode_unit_symbol(const uint8_t* RESTRICT const s, uint8_t* RESTRICT const mem, const int length)
+void encode_unit_symbol(uint8_t* restrict const dst, const uint8_t* restrict const src, const int length)
 {
     for (int i = 0; i < length; ++i)
     {
-        mem[i] ^= s[i];
+        dst[i] ^= src[i];
     }
 }
 
-void encode_rich_symbol(const uint8_t* RESTRICT const s, uint8_t* RESTRICT const mem, const int length, const ff_unit coef)
+void encode_rich_symbol(uint8_t* restrict const dst, const uint8_t* restrict const src, const int length, const ff_unit coef)
 {
     assert(coef != 0);
-    const ff_unit* RESTRICT const offset = gf2_8_multiplication_table + (coef << 8);
+    const ff_unit* restrict const offset = gf2_8_multiplication_table + (coef << 8);
     for (int i = 0; i < length; ++i)
     {
-        mem[i] ^= offset[s[i]];
+        dst[i] ^= offset[src[i]];
     }
 }
 
-void encode_symbol(const uint8_t* RESTRICT const s, uint8_t* RESTRICT const mem, const int length, const ff_unit coef)
+void encode_symbol(uint8_t* restrict const dst, const uint8_t* restrict const src, const int length, const ff_unit coef)
 {
     if (coef == 1)
     {
-        encode_unit_symbol(s, mem, ff_math_size(length));
+        encode_unit_symbol(dst, src, ff_math_size(length));
     }
     else
     {
-        encode_rich_symbol(s, mem, ff_math_size(length), coef);
+        encode_rich_symbol(dst, src, ff_math_size(length), coef);
     }
 }
 
-void normalise_symbol(uint8_t* RESTRICT const mem, const int length, const ff_unit coef)
+void normalise_symbol(uint8_t* restrict const dst, const int length, const ff_unit coef)
 {
     assert(coef != 0);
     const ff_unit* const offset = gf2_8_multiplication_table + (gf2_8_inversion_table[coef] << 8);
     for (int i = 0; i < length; ++i)
     {
-        mem[i] = offset[mem[i]];
+        dst[i] = offset[dst[i]];
     }
 }
 

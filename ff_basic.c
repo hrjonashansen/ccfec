@@ -26,8 +26,16 @@ uint8_t gf2_8_invert(uint8_t u)
     {
         if (j < 0)
         {
-            u ^= v; v ^= u; u ^= v; // swap
-            g1 ^= g2; g2 ^= g1; g1 ^= g2; // swap
+            // Swap u and v
+            const uint8_t tmp_1 = u;
+            u = v;
+            v = tmp_1;
+
+            // Swap g1 and g2
+            const uint8_t tmp_2 = g1;
+            g1 = g2;
+            g2 = tmp_2;
+
             j = -j;
         }
         u ^= v << j;

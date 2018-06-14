@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <arm_neon.h>
 
-#include <ccfec/ff_online.h>
+#include <ccfec/ff_basic.h>
 #include <ccfec/ff.h>
 
 static const uint8_t* restrict gf2_8_inversion_table = NULL;

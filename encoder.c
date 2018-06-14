@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include <ccfec/ff_online.h>
+#include <ccfec/ff_basic.h>
 #include <ccfec/encoder.h>
 
 int encode(encoder_t* const encoder, uint8_t* restrict const payload)

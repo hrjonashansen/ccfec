@@ -11,7 +11,7 @@ add_library(ccfec STATIC
     encoder.c
     decoder.c
     ff.c
-    ff_online.c
+    ff_basic.c
 )
 
 target_include_directories(ccfec PUBLIC "include")

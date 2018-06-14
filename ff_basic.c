@@ -1,6 +1,6 @@
 #include <assert.h>
 
-#include <ccfec/ff_online.h>
+#include <ccfec/ff_basic.h>
 
 uint8_t degree(uint8_t A)
 {

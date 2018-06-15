@@ -16,7 +16,7 @@ uint8_t degree(uint8_t A)
 
 uint8_t gf2_8_invert(uint8_t u)
 {
-    assert(u);
+    assert(u != 0);
 
     uint8_t v = 0x1D;
     uint8_t g1 = 1, g2 = 0;

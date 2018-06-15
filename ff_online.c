@@ -4,6 +4,10 @@
 #include <ccfec/ff_basic.h>
 #include <ccfec/ff.h>
 
+#if !defined(CCFEC_FF_ONLINE_NO_USE_INVERSION_TABLE)
+static const uint8_t* restrict gf2_8_inversion_table = NULL;
+#endif
+
 int SIMD_size()
 {
     return 0;
@@ -33,6 +37,23 @@ int payload_size(const int k, const int symbol_size)
 {
     return k * (int)sizeof(ff_unit) + ff_row_size(symbol_size + sizeof(int));
 }
+
+#if !defined(CCFEC_FF_ONLINE_NO_USE_INVERSION_TABLE)
+const uint8_t* gf2_8_calculate_inversion_table()
+{
+    const int max = 256;
+    uint8_t* const table = (uint8_t*)malloc(max);
+
+    table[1] = 1;
+    for (int i = 2; i < max; ++i)
+    {
+        table[i] = gf2_8_invert(i);
+        assert(table[i] != 0);
+        assert(table[i] != 1);
+    }
+    return table;
+}
+#endif
 
 void encode_unit_symbol(uint8_t* restrict const dst, const uint8_t* restrict const src, const int length)
 {
@@ -65,8 +86,12 @@ void encode_symbol(uint8_t* restrict const dst, const uint8_t* restrict const sr
 
 void normalise_symbol(uint8_t* restrict const dst, const int length, const ff_unit coef)
 {
+#if !defined(CCFEC_FF_ONLINE_NO_USE_INVERSION_TABLE)
     assert(coef != 0);
+    const ff_unit inv_coef = gf2_8_inversion_table[coef];
+#else
     const ff_unit inv_coef = gf2_8_invert(coef);
+#endif
     for (int i = 0; i < length; ++i)
     {
         dst[i] = gf2_8_multiply(inv_coef, dst[i]);
@@ -75,10 +100,16 @@ void normalise_symbol(uint8_t* restrict const dst, const int length, const ff_un
 
 void init_ff()
 {
+#if !defined(CCFEC_FF_ONLINE_NO_USE_INVERSION_TABLE)
+    gf2_8_inversion_table = gf2_8_calculate_inversion_table();
+#endif
 }
 
 void free_ff()
 {
+#if !defined(CCFEC_FF_ONLINE_NO_USE_INVERSION_TABLE)
+    free((void*)gf2_8_inversion_table);
+#endif
 }
 
 const uint8_t * get_gf2_8_multiplication_table()
@@ -88,7 +119,11 @@ const uint8_t * get_gf2_8_multiplication_table()
 
 const uint8_t * get_gf2_8_inversion_table()
 {
+#if !defined(CCFEC_FF_ONLINE_NO_USE_INVERSION_TABLE)
+    return gf2_8_inversion_table;
+#else
     return NULL;
+#endif
 }
 
 int full_multiplication_table()

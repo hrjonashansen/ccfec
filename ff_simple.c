@@ -118,8 +118,8 @@ void init_ff()
 
 void free_ff()
 {
-    free((void *)gf2_8_inversion_table);
-    free((void *)gf2_8_multiplication_table);
+    free((void*)gf2_8_inversion_table);
+    free((void*)gf2_8_multiplication_table);
 }
 
 const uint8_t * get_gf2_8_multiplication_table()

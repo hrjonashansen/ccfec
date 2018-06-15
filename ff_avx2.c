@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <assert.h>
-#include <x86intrin.h> // avx2
+#include <x86intrin.h>
 
 #include <ccfec/ff_basic.h>
 #include <ccfec/ff.h>
@@ -177,8 +177,8 @@ void init_ff()
 
 void free_ff()
 {
-    free((void *)gf2_8_inversion_table_raw);
-    free((void *)gf2_8_multiplication_table_raw);
+    free((void*)gf2_8_inversion_table_raw);
+    free((void*)gf2_8_multiplication_table_raw);
 }
 
 const uint8_t * get_gf2_8_multiplication_table()
